@@ -1,0 +1,38 @@
+name: On-demand price scrape
+
+on:
+  workflow_dispatch:
+    inputs:
+      barcode:
+        description: "Barcode to scrape immediately (must already exist in docs/data/tracked-products.json)"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  scrape-one:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          playwright install --with-deps chromium
+
+      - name: Run scraper for one barcode
+        run: python -m scraper.run --barcode "${{ inputs.barcode }}"
+
+      - name: Commit updated data
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add docs/data/latest-prices.json docs/data/price-history.csv
+          git diff --cached --quiet || git commit -m "chore: on-demand price update for ${{ inputs.barcode }}"
+          git push

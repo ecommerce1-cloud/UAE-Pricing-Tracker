@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Add Barcode — UAE Pricing Tracker</title>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    .card { max-width: 640px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 24px; margin-bottom: 20px; }
+    label { display: block; font-size: 0.8rem; color: var(--text-dim); margin: 14px 0 6px; }
+    input[type="text"] { width: 100%; padding: 9px 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface-2); color: var(--text); font-size: 0.9rem; }
+    .hint { color: var(--text-dim); font-size: 0.78rem; margin-top: 4px; }
+    .status { margin-top: 14px; font-size: 0.85rem; }
+    .status.error { color: var(--bad); }
+    .status.success { color: var(--ok); }
+    .token-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    ol { color: var(--text-dim); font-size: 0.85rem; line-height: 1.6; }
+    code { background: var(--surface-2); padding: 1px 5px; border-radius: 4px; }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>Add a barcode</h1>
+      <div class="subtitle">Writes directly to the repo's tracked-products.json — nothing is stored outside GitHub except your token, which stays only in this browser.</div>
+    </div>
+    <div class="actions"><a class="btn" href="index.html">← Back to dashboard</a></div>
+  </header>
+
+  <div class="card">
+    <strong>1. GitHub access token (one-time setup)</strong>
+    <ol>
+      <li>Go to <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">github.com/settings/personal-access-tokens/new</a></li>
+      <li>Set <strong>Resource owner</strong> to <code>ecommerce1-cloud</code> and <strong>Repository access</strong> to only <code>UAE-Pricing-Tracker</code></li>
+      <li>Under <strong>Permissions → Repository permissions</strong>, set <strong>Contents: Read and write</strong> and <strong>Actions: Read and write</strong></li>
+      <li>Generate the token, copy it, and paste it below</li>
+    </ol>
+    <div class="token-row">
+      <input type="text" id="token-input" placeholder="github_pat_..." />
+      <button id="save-token-btn">Save</button>
+      <button id="forget-token-btn">Forget</button>
+    </div>
+    <div class="hint" id="token-status"></div>
+  </div>
+
+  <form class="card" id="add-product-form">
+    <strong>2. Product details</strong>
+
+    <label for="barcode">Barcode (EAN/UPC)</label>
+    <input type="text" id="barcode" name="barcode" required />
+
+    <label for="name">Product name</label>
+    <input type="text" id="name" name="name" placeholder="For your own reference on the dashboard" />
+
+    <label for="amazon">Amazon.ae product URL or ASIN</label>
+    <input type="text" id="amazon" name="amazon" placeholder="https://www.amazon.ae/dp/B0... or B0..." />
+    <div class="hint">Also used for the Amazon Now (fast-delivery) column — same product page.</div>
+
+    <label for="noon">Noon product URL or SKU</label>
+    <input type="text" id="noon" name="noon" placeholder="https://www.noon.com/uae-en/... or SKU" />
+
+    <label for="noon_minutes">Noon Minutes product URL or SKU</label>
+    <input type="text" id="noon_minutes" name="noon_minutes" placeholder="https://minutes.noon.com/uae-en/... or SKU" />
+
+    <label for="talabat">Talabat Mart item URL</label>
+    <input type="text" id="talabat" name="talabat" placeholder="https://www.talabat.com/uae/..." />
+
+    <div class="hint" style="margin-top:14px;">Leave a platform blank if the product isn't sold there — its column will just show "—".</div>
+
+    <button type="submit" class="btn-primary" style="margin-top:16px;">Save &amp; commit to GitHub</button>
+    <div class="status" id="status"></div>
+  </form>
+
+  <script src="platforms.js"></script>
+  <script src="add-product.js"></script>
+</body>
+</html>

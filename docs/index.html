@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>UAE Pricing Tracker</title>
+  <link rel="stylesheet" href="style.css" />
+  <style>.hidden { display: none !important; }</style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>UAE Pricing Tracker</h1>
+      <div class="subtitle">Barcode-level price comparison across Amazon.ae, Amazon Now, Noon, Noon Minutes &amp; Talabat Mart</div>
+    </div>
+    <div class="actions">
+      <a class="btn" href="add-product.html">+ Add barcode</a>
+      <button id="export-btn" class="btn-primary">Export CSV</button>
+    </div>
+  </header>
+
+  <div class="table-wrap" id="table-wrap">
+    <table>
+      <thead>
+        <tr id="platform-head-row"></tr>
+      </thead>
+      <tbody id="price-tbody"></tbody>
+    </table>
+  </div>
+
+  <div class="empty-state hidden" id="empty-state">
+    No barcodes tracked yet. <a class="btn" href="add-product.html">Add your first one</a>.
+  </div>
+
+  <script src="platforms.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
