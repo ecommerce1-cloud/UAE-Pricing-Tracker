@@ -1,13 +1,13 @@
 {
   "5056141881928": {
     "name": "Hotpack Bio-Degradable Heavy Duty Garbage Bags 65x95cm (3x20pcs)",
-    "checked_at": "2026-08-17T19:37:53.395185+00:00",
+    "checked_at": "2026-08-17T19:46:37.467512+00:00",
     "platforms": {
       "amazon_core": {
         "price": null,
         "currency": "AED",
         "available": false,
-        "error": "price element not found (page structure may have changed)"
+        "error": "price element not found (page structure may have changed, or bot-blocked)"
       },
       "amazon_fast": {
         "price": null,
@@ -19,7 +19,7 @@
         "price": null,
         "currency": "AED",
         "available": false,
-        "error": "price not found (page structure may have changed)"
+        "error": "noon_retail scrape failed: Page.goto: net::ERR_HTTP2_PROTOCOL_ERROR at https://www.noon.com/uae-en/hotpack-strong-bio-degradable-heavy-duty-disposable-garbage-20-pcs-65cm-x-95cm-pack-3-opgbr6595x3pkt-black-65x95cm/N45268893A/p/\nCall log:\nnavigating to \"https://www.noon.com/uae-en/hotpack-strong-bio-degradable-heavy-duty-disposable-garbage-20-pcs-65cm-x-95cm-pack-3-opgbr6595x3pkt-black-65x95cm/N45268893A/p/\", waiting until \"networkidle\"\n"
       },
       "noon_minutes": {
         "zones": {
