@@ -1,1 +1,12 @@
-{}
+{
+  "5056141881928": {
+    "name": "Hotpack Bio-Degradable Heavy Duty Garbage Bags 65x95cm (3x20pcs)",
+    "added_at": "2026-08-17T00:00:00Z",
+    "platforms": {
+      "amazon_core": { "asin": "B092BTLHZX" },
+      "amazon_fast": { "asin": "B092BTLHZX" },
+      "noon_retail": { "url": "https://www.noon.com/uae-en/hotpack-strong-bio-degradable-heavy-duty-disposable-garbage-20-pcs-65cm-x-95cm-pack-3-opgbr6595x3pkt-black-65x95cm/N45268893A/p/" },
+      "noon_minutes": { "url": "https://minutes.noon.com/uae-en/now-product/Z3A381CE007B28CE0D7AFZ-1/" }
+    }
+  }
+}
