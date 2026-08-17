@@ -1,16 +1,14 @@
 """Noon Minutes (minutes.noon.com) darkstore price scraper. Zone-based.
 
-The site is backed by JSON endpoints under /_svc/ (confirmed via live recon:
-configs, instant/session/get, catalog/*). Rather than hand-reconstruct those
-request payloads blind, this scrapes by setting the browser geolocation to the
-target zone, letting the site's own JS establish its darkstore session, then
-either (a) intercepting the catalog response that the product page naturally
-triggers, or (b) falling back to reading the rendered price from the DOM.
-
-Exact selectors/response shape are flagged in the plan as needing confirmation
-against a real SKU during the first end-to-end test.
+Confirmed via live inspection: like noon.com retail, product pages embed a
+schema.org Product JSON-LD block with offers.price -- used as the primary
+signal here too. The browser geolocation is set to the target zone before
+navigating so the price reflects that darkstore's session/catalog. Falls back
+to a DOM selector, then to intercepting the page's own /_svc/catalog response,
+if JSON-LD isn't present for some reason (e.g. an out-of-coverage zone).
 """
 
+import json
 import re
 
 from ..browser import empty_result, new_page
@@ -29,6 +27,23 @@ def _product_url(ref: dict) -> str | None:
         return ref["url"]
     if ref.get("sku"):
         return f"https://minutes.noon.com/uae-en/{ref['sku']}/p/"
+    return None
+
+
+def _price_from_json_ld(page) -> float | None:
+    for script in page.query_selector_all("script[type='application/ld+json']"):
+        try:
+            data = json.loads(script.inner_text())
+        except (ValueError, TypeError):
+            continue
+        candidates = data if isinstance(data, list) else [data]
+        for item in candidates:
+            offers = item.get("offers") if isinstance(item, dict) else None
+            if isinstance(offers, dict) and offers.get("price"):
+                try:
+                    return float(offers["price"])
+                except (TypeError, ValueError):
+                    continue
     return None
 
 
@@ -59,21 +74,24 @@ def scrape_price(ref: dict, zone: dict) -> dict:
 
             page.goto(url, wait_until="networkidle", timeout=30000)
 
-            if "value" in captured_price:
-                return {"price": captured_price["value"], "currency": "AED", "available": True, "error": None}
+            price = _price_from_json_ld(page)
 
-            for selector in DOM_PRICE_SELECTORS:
-                el = page.query_selector(selector)
-                if el:
-                    match = re.search(r"[\d.,]+", el.inner_text().replace(",", ""))
-                    if match:
-                        return {
-                            "price": float(match.group()),
-                            "currency": "AED",
-                            "available": True,
-                            "error": None,
-                        }
+            if price is None:
+                for selector in DOM_PRICE_SELECTORS:
+                    el = page.query_selector(selector)
+                    if el:
+                        match = re.search(r"[\d.,]+", el.inner_text().replace(",", ""))
+                        if match:
+                            price = float(match.group())
+                            break
 
+            if price is None and "value" in captured_price:
+                price = captured_price["value"]
+
+            if price is not None:
+                return {"price": price, "currency": "AED", "available": True, "error": None}
+
+            print(f"[noon_minutes] zone {zone['id']}: price not found. page title: {page.title()!r}")
             return empty_result(f"price not found for zone '{zone['id']}' (out of coverage or page changed)")
     except Exception as exc:  # noqa: BLE001
         return empty_result(f"noon_minutes scrape failed for zone '{zone['id']}': {exc}")

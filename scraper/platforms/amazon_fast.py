@@ -5,10 +5,9 @@ from the account/session address rather than an arbitrary lat/lng), so this is
 scraped once per product like amazon_core.
 
 NOTE: the exact mechanism for confirming a product is priced/sold under the fast
-tier needs validation against a real ASIN that participates in it (flagged as an
-open item in the plan). Current approach: load the product page and look for a
-fast-delivery badge; if present, reuse the displayed price, otherwise report
-unavailable rather than guessing.
+tier needs validation against a real ASIN that participates in it. Current
+approach: load the product page and look for a fast-delivery badge; if present,
+reuse the displayed price, otherwise report unavailable rather than guessing.
 """
 
 import re
@@ -30,7 +29,11 @@ def scrape_price(ref: dict, zone: dict | None = None) -> dict:
 
     try:
         with new_page() as page:
-            page.goto(url, wait_until="domcontentloaded", timeout=30000)
+            page.goto(url, wait_until="load", timeout=30000)
+            try:
+                page.wait_for_selector(".a-price .a-offscreen", timeout=8000)
+            except Exception:  # noqa: BLE001
+                pass
 
             is_fast_eligible = any(page.query_selector(sel) for sel in FAST_BADGE_SELECTORS)
             if not is_fast_eligible:

@@ -1,4 +1,9 @@
-"""Noon.com retail storefront price scraper. Not zone-based (ships nationally)."""
+"""Noon.com retail storefront price scraper. Not zone-based (ships nationally).
+
+Confirmed via live inspection: noon product pages embed a schema.org Product
+JSON-LD block with offers.price, which is far more stable than any CSS class
+name. That's used as the primary signal, with a DOM selector as fallback.
+"""
 
 import json
 import re
@@ -44,7 +49,7 @@ def scrape_price(ref: dict, zone: dict | None = None) -> dict:
 
     try:
         with new_page() as page:
-            page.goto(url, wait_until="domcontentloaded", timeout=30000)
+            page.goto(url, wait_until="networkidle", timeout=30000)
 
             price = _price_from_json_ld(page)
             if price is None:
@@ -57,7 +62,8 @@ def scrape_price(ref: dict, zone: dict | None = None) -> dict:
                             break
 
             if price is None:
-                return empty_result("price not found (page structure may have changed)")
+                print(f"[noon_retail] price not found. page title: {page.title()!r}")
+                return empty_result("price not found (page structure may have changed, or bot-blocked)")
 
             return {"price": price, "currency": "AED", "available": True, "error": None}
     except Exception as exc:  # noqa: BLE001

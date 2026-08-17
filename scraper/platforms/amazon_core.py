@@ -27,15 +27,22 @@ def scrape_price(ref: dict, zone: dict | None = None) -> dict:
 
     try:
         with new_page() as page:
-            page.goto(url, wait_until="domcontentloaded", timeout=30000)
+            page.goto(url, wait_until="load", timeout=30000)
+            try:
+                page.wait_for_selector(".a-price .a-offscreen", timeout=8000)
+            except Exception:  # noqa: BLE001 - fall through to selector loop below
+                pass
+
             price_text = None
             for selector in PRICE_SELECTORS:
                 el = page.query_selector(selector)
                 if el:
                     price_text = el.inner_text()
                     break
+
             if not price_text:
-                return empty_result("price element not found (page structure may have changed)")
+                print(f"[amazon_core] price not found. page title: {page.title()!r}")
+                return empty_result("price element not found (page structure may have changed, or bot-blocked)")
 
             match = re.search(r"[\d.,]+", price_text.replace(",", ""))
             if not match:
