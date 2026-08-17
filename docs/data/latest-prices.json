@@ -1,1 +1,60 @@
-{}
+{
+  "5056141881928": {
+    "name": "Hotpack Bio-Degradable Heavy Duty Garbage Bags 65x95cm (3x20pcs)",
+    "checked_at": "2026-08-17T19:37:53.395185+00:00",
+    "platforms": {
+      "amazon_core": {
+        "price": null,
+        "currency": "AED",
+        "available": false,
+        "error": "price element not found (page structure may have changed)"
+      },
+      "amazon_fast": {
+        "price": null,
+        "currency": "AED",
+        "available": false,
+        "error": "product not eligible for fast-delivery tier at this address"
+      },
+      "noon_retail": {
+        "price": null,
+        "currency": "AED",
+        "available": false,
+        "error": "price not found (page structure may have changed)"
+      },
+      "noon_minutes": {
+        "zones": {
+          "marina_jbr": {
+            "price": null,
+            "currency": "AED",
+            "available": false,
+            "error": "price not found for zone 'marina_jbr' (out of coverage or page changed)"
+          },
+          "downtown_businessbay": {
+            "price": null,
+            "currency": "AED",
+            "available": false,
+            "error": "price not found for zone 'downtown_businessbay' (out of coverage or page changed)"
+          },
+          "deira_burdubai": {
+            "price": null,
+            "currency": "AED",
+            "available": false,
+            "error": "price not found for zone 'deira_burdubai' (out of coverage or page changed)"
+          },
+          "jumeirah_albarsha": {
+            "price": null,
+            "currency": "AED",
+            "available": false,
+            "error": "price not found for zone 'jumeirah_albarsha' (out of coverage or page changed)"
+          },
+          "dso_academiccity": {
+            "price": null,
+            "currency": "AED",
+            "available": false,
+            "error": "price not found for zone 'dso_academiccity' (out of coverage or page changed)"
+          }
+        }
+      }
+    }
+  }
+}
