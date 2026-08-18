@@ -24,14 +24,17 @@ jobs:
           python-version: "3.12"
 
       - name: Install dependencies
+        shell: bash
         run: |
           pip install -r requirements.txt
-          playwright install --with-deps chromium
+          playwright install --with-deps chromium || playwright install chromium
 
       - name: Run scraper for one barcode
+        shell: bash
         run: python -m scraper.run --barcode "${{ inputs.barcode }}"
 
       - name: Commit updated data
+        shell: bash
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
