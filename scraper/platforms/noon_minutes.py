@@ -1,28 +1,29 @@
-"""Noon Minutes (minutes.noon.com) darkstore price scraper. Zone-based.
+"""noon Minutes (minutes.noon.com) -- darkstore model, priced per zone.
 
-Confirmed via live inspection: like noon.com retail, product pages embed a
-schema.org Product JSON-LD block with offers.price -- used as the primary
-signal here too. The browser geolocation is set to the target zone before
-navigating so the price reflects that darkstore's session/catalog. Falls back
-to a DOM selector, then to intercepting the page's own /_svc/catalog response,
-if JSON-LD isn't present for some reason (e.g. an out-of-coverage zone).
+Two possible price sources, in order of preference:
+
+1. The site's own /_svc/catalog response, intercepted as the page loads. This is
+   zone-accurate because it is served for the darkstore session established for
+   the context's geolocation.
+2. The server-rendered JSON-LD block. Easier and faster, but it may be
+   zone-invariant -- we can't be sure it reflects the selected darkstore.
+
+Whichever is used is recorded in the result's `source` field, so if every zone
+comes back identical with source="json_ld" that is a signal the JSON-LD number
+is not zone-specific and only source (1) should be trusted.
 """
 
-import json
 import re
 
-from ..browser import empty_result, new_page
+from ..result import classify_failure, ok, unavailable
+from .jsonld import price_from_json_ld
 
-CATALOG_RESPONSE_PATTERN = re.compile(r"/_svc/catalog/")
+ZONE_BASED = True
 
-DOM_PRICE_SELECTORS = [
-    "[data-qa='product-price']",
-    ".priceNow",
-    "[class*='priceNow']",
-]
+CATALOG_PATTERN = re.compile(r"/_svc/catalog/")
 
 
-def _product_url(ref: dict) -> str | None:
+def product_url(ref: dict) -> str | None:
     if ref.get("url"):
         return ref["url"]
     if ref.get("sku"):
@@ -30,106 +31,67 @@ def _product_url(ref: dict) -> str | None:
     return None
 
 
-def _price_from_json_ld(page) -> float | None:
-    for script in page.query_selector_all("script[type='application/ld+json']"):
+async def bootstrap(page, zone: dict) -> None:
+    """Establish the darkstore session for this zone once per context."""
+    await page.goto("https://minutes.noon.com/uae-en/", wait_until="domcontentloaded", timeout=45000)
+    for label in ("Allow", "Use my location", "Enable location"):
         try:
-            data = json.loads(script.inner_text())
-        except (ValueError, TypeError):
-            continue
-        candidates = data if isinstance(data, list) else [data]
-        for item in candidates:
-            offers = item.get("offers") if isinstance(item, dict) else None
-            if isinstance(offers, dict) and offers.get("price"):
-                try:
-                    return float(offers["price"])
-                except (TypeError, ValueError):
-                    continue
-    return None
-
-
-def scrape_price(ref: dict, zone: dict) -> dict:
-    url = _product_url(ref)
-    if not url:
-        return empty_result("no url/sku configured for noon_minutes")
-    if not zone:
-        return empty_result("noon_minutes requires a zone")
-
-    captured_price = {}
-
-    def on_response(response):
-        if CATALOG_RESPONSE_PATTERN.search(response.url) and response.status == 200:
-            try:
-                data = response.json()
-            except Exception:  # noqa: BLE001
-                return
-            price = _find_price_in_json(data, ref.get("sku"))
-            if price is not None:
-                captured_price["value"] = price
-
-    try:
-        with new_page(geolocation={"lat": zone["lat"], "lng": zone["lng"]}) as page:
-            page.on("response", on_response)
-            page.goto("https://minutes.noon.com/uae-en/", wait_until="networkidle", timeout=30000)
-            _accept_location_prompt(page)
-
-            page.goto(url, wait_until="networkidle", timeout=30000)
-
-            price = _price_from_json_ld(page)
-
-            if price is None:
-                for selector in DOM_PRICE_SELECTORS:
-                    el = page.query_selector(selector)
-                    if el:
-                        match = re.search(r"[\d.,]+", el.inner_text().replace(",", ""))
-                        if match:
-                            price = float(match.group())
-                            break
-
-            if price is None and "value" in captured_price:
-                price = captured_price["value"]
-
-            if price is not None:
-                return {"price": price, "currency": "AED", "available": True, "error": None}
-
-            title = page.title()
-            print(f"[noon_minutes] zone {zone['id']}: price not found. page title: {title!r}")
-            if "just a moment" in title.lower():
-                return empty_result(
-                    f"blocked: Cloudflare bot challenge for zone '{zone['id']}' "
-                    "(datacenter IP). See SETUP.md."
-                )
-            return empty_result(f"price not found for zone '{zone['id']}' (out of coverage or page changed)")
-    except Exception as exc:  # noqa: BLE001
-        return empty_result(f"noon_minutes scrape failed for zone '{zone['id']}': {exc}")
-
-
-def _accept_location_prompt(page) -> None:
-    for text in ["Allow", "Use my location", "Enable location"]:
-        try:
-            btn = page.get_by_text(text, exact=False)
-            if btn.count() > 0:
-                btn.first.click(timeout=2000)
-                page.wait_for_timeout(1000)
-                return
+            btn = page.get_by_text(label, exact=False)
+            if await btn.count() > 0:
+                await btn.first.click(timeout=2000)
+                await page.wait_for_timeout(800)
+                break
         except Exception:  # noqa: BLE001
             continue
 
 
-def _find_price_in_json(data, sku: str | None):
-    """Best-effort recursive search for a price tied to the tracked SKU."""
+async def scrape(page, ref: dict, zone: dict) -> dict:
+    url = product_url(ref)
+    if not url:
+        return unavailable("no noon Minutes URL/SKU configured")
+
+    captured: dict = {}
+    sku = ref.get("sku")
+
+    async def on_response(response):
+        if not CATALOG_PATTERN.search(response.url) or response.status != 200:
+            return
+        try:
+            data = await response.json()
+        except Exception:  # noqa: BLE001
+            return
+        found = _find_price(data, sku)
+        if found is not None:
+            captured["price"] = found
+
+    page.on("response", on_response)
+    await page.goto(url, wait_until="domcontentloaded", timeout=45000)
+
+    if "price" in captured:
+        return ok(captured["price"], "catalog_api")
+
+    price = await price_from_json_ld(page)
+    if price is not None:
+        return ok(price, "json_ld")
+
+    return unavailable(classify_failure(await page.title(), f"noon_minutes/{zone['id']}"))
+
+
+def _find_price(data, sku: str | None):
+    """Recursive best-effort search for a price attached to the tracked SKU."""
     if isinstance(data, dict):
-        if sku and data.get("sku") == sku and "price" in data:
+        if sku and data.get("sku") == sku and data.get("price") is not None:
             try:
                 return float(data["price"])
             except (TypeError, ValueError):
                 pass
         for value in data.values():
-            result = _find_price_in_json(value, sku)
-            if result is not None:
-                return result
+            hit = _find_price(value, sku)
+            if hit is not None:
+                return hit
     elif isinstance(data, list):
         for item in data:
-            result = _find_price_in_json(item, sku)
-            if result is not None:
-                return result
+            hit = _find_price(item, sku)
+            if hit is not None:
+                return hit
     return None

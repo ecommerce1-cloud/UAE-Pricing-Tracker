@@ -1,37 +1,15 @@
-from . import amazon_core, amazon_fast, noon_retail, noon_minutes, talabat_mart
+from . import amazon, noon_minutes, noon_retail, talabat_mart
 
-# id -> (display name, logo filename, module, zone_based)
-PLATFORMS = {
-    "amazon_core": {
-        "name": "Amazon.ae",
-        "logo": "amazon_core.svg",
-        "module": amazon_core,
-        "zone_based": False,
-    },
-    "amazon_fast": {
-        "name": "Amazon Now",
-        "logo": "amazon_fast.svg",
-        "module": amazon_fast,
-        "zone_based": False,
-    },
-    "noon_retail": {
-        "name": "Noon",
-        "logo": "noon_retail.svg",
-        "module": noon_retail,
-        "zone_based": False,
-    },
-    "noon_minutes": {
-        "name": "Noon Minutes",
-        "logo": "noon_minutes.svg",
-        "module": noon_minutes,
-        "zone_based": True,
-    },
-    "talabat_mart": {
-        "name": "Talabat Mart",
-        "logo": "talabat_mart.svg",
-        "module": talabat_mart,
-        "zone_based": True,
-    },
-}
+# Display order in every output. amazon_core and amazon_fast are both produced
+# by the single `amazon` module from one page load.
+PLATFORMS = [
+    {"id": "amazon_core", "name": "Amazon.ae", "logo": "amazon_core.svg", "zone_based": False},
+    {"id": "amazon_fast", "name": "Amazon Now", "logo": "amazon_fast.svg", "zone_based": False},
+    {"id": "noon_retail", "name": "Noon", "logo": "noon_retail.svg", "zone_based": False},
+    {"id": "noon_minutes", "name": "Noon Minutes", "logo": "noon_minutes.svg", "zone_based": True},
+    {"id": "talabat_mart", "name": "Talabat Mart", "logo": "talabat_mart.svg", "zone_based": True},
+]
 
-PLATFORM_ORDER = list(PLATFORMS.keys())
+PLATFORM_BY_ID = {p["id"]: p for p in PLATFORMS}
+
+ZONE_MODULES = {"noon_minutes": noon_minutes, "talabat_mart": talabat_mart}

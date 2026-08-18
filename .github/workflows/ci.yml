@@ -1,0 +1,31 @@
+name: CI
+
+# The scraper itself runs locally (GitHub's datacenter IPs get bot-blocked by
+# these platforms), so CI only verifies that the code imports and that the
+# input/output pipeline works. No network scraping happens here.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Byte-compile every module
+        run: python -m compileall -q scraper tests
+
+      - name: Import all platform modules
+        run: python -c "import scraper.local_run, scraper.engine, scraper.outputs, scraper.inputs; from scraper.platforms import PLATFORMS, ZONE_MODULES; print('imports OK', len(PLATFORMS), 'platforms')"
+
+      - name: Offline input/output smoke test
+        run: python tests/smoke_outputs.py
