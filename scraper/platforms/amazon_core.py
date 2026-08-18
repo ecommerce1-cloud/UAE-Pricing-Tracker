@@ -11,6 +11,11 @@ PRICE_SELECTORS = [
     "#priceblock_ourprice",
 ]
 
+CONTINUE_SELECTORS = [
+    "text=/Continue shopping/i",
+    "#nav-global-location-popover-link",
+]
+
 
 def _product_url(ref: dict) -> str | None:
     if ref.get("url"):
@@ -28,6 +33,16 @@ def scrape_price(ref: dict, zone: dict | None = None) -> dict:
     try:
         with new_page() as page:
             page.goto(url, wait_until="load", timeout=30000)
+
+            for sel in CONTINUE_SELECTORS:
+                try:
+                    btn = page.query_selector(sel)
+                    if btn:
+                        btn.click(timeout=2000)
+                        page.wait_for_load_state("load", timeout=10000)
+                except Exception:  # noqa: BLE001
+                    pass
+
             try:
                 page.wait_for_selector(".a-price .a-offscreen", timeout=8000)
             except Exception:  # noqa: BLE001 - fall through to selector loop below
@@ -41,7 +56,9 @@ def scrape_price(ref: dict, zone: dict | None = None) -> dict:
                     break
 
             if not price_text:
-                print(f"[amazon_core] price not found. page title: {page.title()!r}")
+                print(f"[amazon_core] price not found. url={page.url!r} title={page.title()!r}")
+                snippet = page.evaluate("document.body ? document.body.innerText.slice(0, 300) : ''")
+                print(f"[amazon_core] body snippet: {snippet!r}")
                 return empty_result("price element not found (page structure may have changed, or bot-blocked)")
 
             match = re.search(r"[\d.,]+", price_text.replace(",", ""))
