@@ -1,6 +1,9 @@
-# Making the scrapers actually return prices (no paid services)
+# Why this runs locally, and what to do if you outgrow it
 
-## The problem
+The tool runs on your own PC (see [README.md](README.md)). This file explains why
+the cloud option was ruled out, and what the upgrade paths are.
+
+## The problem with running it in the cloud
 
 The scrapers work, but GitHub-hosted runners can't reach the product pages.
 Confirmed from real workflow logs:
@@ -58,11 +61,15 @@ Never commit them.
 
 ---
 
-## Path B — Run the existing scrapers from a UAE IP (free if you have hardware)
+## Path B (in use) — run it locally from a UAE IP
 
-Register any always-on machine on your UAE network (office PC, spare box, local
-VPS you already pay for) as a **self-hosted runner**. The existing Playwright
-scrapers then browse from a normal UAE address, exactly like a customer.
+This is the current setup: you run `python -m scraper.local_run` on your own
+machine, so requests come from a normal UAE address exactly like a customer.
+Verified working — Amazon.ae returned AED 23.65 and both noon storefronts
+returned real pages from this network, while GitHub's runners got challenges.
+
+If you later want it scheduled without running it by hand, the same code can be
+driven by a **self-hosted GitHub Actions runner** on an always-on UAE machine:
 
 1. GitHub repo → **Settings → Actions → Runners → New self-hosted runner**
 2. Follow the shown commands on the UAE machine
