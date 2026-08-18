@@ -179,3 +179,14 @@ tbody tr:hover {
   color: var(--text-dim);
   font-size: 0.75rem;
 }
+
+/* Hoverable explanation for empty cells; blocked-by-platform is called out
+   distinctly from "not sold here" so the two aren't confused. */
+.price.unavailable {
+  cursor: help;
+}
+
+.price.unavailable.blocked {
+  color: var(--warn);
+  font-style: normal;
+}

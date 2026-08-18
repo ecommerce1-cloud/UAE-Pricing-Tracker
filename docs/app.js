@@ -12,20 +12,38 @@ async function loadData() {
   latestData = await latestRes.json();
 }
 
+function escapeAttr(value) {
+  return String(value == null ? "" : value)
+    .replace(/&/g, "&amp;")
+    .replace(/"/g, "&quot;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
+// An empty cell means one of two very different things: the platform refused the
+// request (infrastructure problem -- shows a warning) or the product just isn't
+// sold/tracked there (plain dash). Either way the reason goes in the tooltip.
+function unavailableCell(errorMsg) {
+  const blocked = /^blocked:/i.test(errorMsg || "");
+  const glyph = blocked ? "⚠" : "—";
+  const cls = blocked ? "price unavailable blocked" : "price unavailable";
+  return `<span class="${cls}" title="${escapeAttr(errorMsg || "no data yet")}">${glyph}</span>`;
+}
+
 function formatPrice(priceData) {
   if (!priceData || !priceData.available || priceData.price == null) {
-    return `<span class="price unavailable">—</span>`;
+    return unavailableCell(priceData && priceData.error);
   }
   return `<span class="price">AED ${priceData.price.toFixed(2)}</span>`;
 }
 
 function renderZoneCell(platformId, zoneResults) {
-  const available = ZONES.map((z) => zoneResults[z.id]).filter(
-    (r) => r && r.available && r.price != null
-  );
+  const perZone = ZONES.map((z) => zoneResults[z.id]);
+  const available = perZone.filter((r) => r && r.available && r.price != null);
 
   if (available.length === 0) {
-    return `<div class="price-cell"><span class="price unavailable">—</span></div>`;
+    const firstErr = perZone.find((r) => r && r.error);
+    return `<div class="price-cell">${unavailableCell(firstErr && firstErr.error)}</div>`;
   }
 
   const prices = available.map((r) => r.price);
@@ -39,14 +57,19 @@ function renderZoneCell(platformId, zoneResults) {
   const cellId = `zones-${platformId}-${Math.random().toString(36).slice(2)}`;
   const breakdown = ZONES.map((z) => {
     const r = zoneResults[z.id];
-    const text = r && r.available && r.price != null ? `AED ${r.price.toFixed(2)}` : "—";
+    const text =
+      r && r.available && r.price != null
+        ? `AED ${r.price.toFixed(2)}`
+        : unavailableCell(r && r.error);
     return `<div><span>${z.name}</span><span>${text}</span></div>`;
   }).join("");
+
+  const label = available.length === ZONES.length ? "5 zones" : `${available.length}/${ZONES.length} zones`;
 
   return `
     <div class="price-cell">
       ${summary}
-      <span class="zone-toggle" onclick="document.getElementById('${cellId}').classList.toggle('hidden')">5 zones ▾</span>
+      <span class="zone-toggle" onclick="document.getElementById('${cellId}').classList.toggle('hidden')">${label} ▾</span>
       <div class="zone-breakdown hidden" id="${cellId}">${breakdown}</div>
     </div>
   `;
@@ -73,7 +96,7 @@ function renderTable() {
       const platformCells = PLATFORMS.map((platform) => {
         const platformResult = latest && latest.platforms ? latest.platforms[platform.id] : null;
         if (!platformResult) {
-          return `<td class="price-cell"><span class="price unavailable">—</span></td>`;
+          return `<td class="price-cell">${unavailableCell("not tracked on this platform")}</td>`;
         }
         if (platform.zoneBased) {
           return `<td>${renderZoneCell(platform.id, platformResult.zones || {})}</td>`;
@@ -113,7 +136,9 @@ function renderHeader() {
 }
 
 function exportCSV() {
-  const rows = [["barcode", "product_name", "platform", "zone", "price", "currency", "available", "checked_at"]];
+  const rows = [
+    ["barcode", "product_name", "platform", "zone", "price", "currency", "available", "note", "checked_at"],
+  ];
 
   for (const [barcode, product] of Object.entries(trackedData)) {
     const latest = latestData[barcode];
@@ -132,6 +157,7 @@ function exportCSV() {
             r && r.price != null ? r.price : "",
             r ? r.currency : "",
             r ? r.available : "",
+            r && r.error ? r.error : "",
             latest.checked_at,
           ]);
         }
@@ -144,6 +170,7 @@ function exportCSV() {
           result.price != null ? result.price : "",
           result.currency,
           result.available,
+          result.error || "",
           latest.checked_at,
         ]);
       }
