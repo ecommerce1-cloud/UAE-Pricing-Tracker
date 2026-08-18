@@ -1,4 +1,13 @@
-"""Amazon.ae core storefront price scraper. Not zone-based (national pricing)."""
+"""Amazon.ae core storefront price scraper. Not zone-based (national pricing).
+
+NOTE: from GitHub-hosted runners this reliably returns Amazon's "continue
+shopping" bot interstitial instead of the product page, because the request
+originates from a flagged datacenter IP outside the UAE. That is an
+infrastructure problem, not a selector problem -- see SETUP.md for the two
+supported fixes (official seller API, or a self-hosted runner on a UAE IP).
+This scraper deliberately does not try to click through or otherwise defeat
+that interstitial.
+"""
 
 import re
 
@@ -9,11 +18,6 @@ PRICE_SELECTORS = [
     "#corePriceDisplay_desktop_feature_div span.a-price span.a-offscreen",
     "span.a-price span.a-offscreen",
     "#priceblock_ourprice",
-]
-
-CONTINUE_SELECTORS = [
-    "text=/Continue shopping/i",
-    "#nav-global-location-popover-link",
 ]
 
 
@@ -34,15 +38,6 @@ def scrape_price(ref: dict, zone: dict | None = None) -> dict:
         with new_page() as page:
             page.goto(url, wait_until="load", timeout=30000)
 
-            for sel in CONTINUE_SELECTORS:
-                try:
-                    btn = page.query_selector(sel)
-                    if btn:
-                        btn.click(timeout=2000)
-                        page.wait_for_load_state("load", timeout=10000)
-                except Exception:  # noqa: BLE001
-                    pass
-
             try:
                 page.wait_for_selector(".a-price .a-offscreen", timeout=8000)
             except Exception:  # noqa: BLE001 - fall through to selector loop below
@@ -56,10 +51,14 @@ def scrape_price(ref: dict, zone: dict | None = None) -> dict:
                     break
 
             if not price_text:
-                print(f"[amazon_core] price not found. url={page.url!r} title={page.title()!r}")
-                snippet = page.evaluate("document.body ? document.body.innerText.slice(0, 300) : ''")
-                print(f"[amazon_core] body snippet: {snippet!r}")
-                return empty_result("price element not found (page structure may have changed, or bot-blocked)")
+                title = page.title()
+                print(f"[amazon_core] price not found. url={page.url!r} title={title!r}")
+                if title.strip() in ("Amazon.ae", "Amazon.com"):
+                    return empty_result(
+                        "blocked: Amazon served its bot interstitial instead of the product page "
+                        "(datacenter IP). See SETUP.md."
+                    )
+                return empty_result("price element not found (page structure may have changed)")
 
             match = re.search(r"[\d.,]+", price_text.replace(",", ""))
             if not match:

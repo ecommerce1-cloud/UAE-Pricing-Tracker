@@ -28,6 +28,12 @@ Noon, Noon Minutes, and Talabat Mart — all UAE, all automated inside GitHub.
 - `docs/data/price-history.csv` — append-only daily log of every check, used for
   trend analysis and full export.
 
+## Status: prices are currently blocked
+
+The pipeline runs end-to-end, but GitHub-hosted runners get bot-blocked by
+Amazon and Noon (datacenter IPs). **See [SETUP.md](SETUP.md) for the two free
+fixes** — official seller APIs, or a self-hosted runner on a UAE IP.
+
 ## Known risk
 
 Scraping these platforms' pages/internal APIs likely isn't sanctioned by their

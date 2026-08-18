@@ -91,7 +91,13 @@ def scrape_price(ref: dict, zone: dict) -> dict:
             if price is not None:
                 return {"price": price, "currency": "AED", "available": True, "error": None}
 
-            print(f"[noon_minutes] zone {zone['id']}: price not found. page title: {page.title()!r}")
+            title = page.title()
+            print(f"[noon_minutes] zone {zone['id']}: price not found. page title: {title!r}")
+            if "just a moment" in title.lower():
+                return empty_result(
+                    f"blocked: Cloudflare bot challenge for zone '{zone['id']}' "
+                    "(datacenter IP). See SETUP.md."
+                )
             return empty_result(f"price not found for zone '{zone['id']}' (out of coverage or page changed)")
     except Exception as exc:  # noqa: BLE001
         return empty_result(f"noon_minutes scrape failed for zone '{zone['id']}': {exc}")

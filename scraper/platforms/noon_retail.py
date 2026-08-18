@@ -62,8 +62,14 @@ def scrape_price(ref: dict, zone: dict | None = None) -> dict:
                             break
 
             if price is None:
-                print(f"[noon_retail] price not found. page title: {page.title()!r}")
-                return empty_result("price not found (page structure may have changed, or bot-blocked)")
+                title = page.title()
+                print(f"[noon_retail] price not found. page title: {title!r}")
+                if "just a moment" in title.lower():
+                    return empty_result(
+                        "blocked: Cloudflare bot challenge served instead of the product page "
+                        "(datacenter IP). See SETUP.md."
+                    )
+                return empty_result("price not found (page structure may have changed)")
 
             return {"price": price, "currency": "AED", "available": True, "error": None}
     except Exception as exc:  # noqa: BLE001

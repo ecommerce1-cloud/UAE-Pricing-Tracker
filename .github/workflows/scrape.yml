@@ -10,7 +10,9 @@ permissions:
 
 jobs:
   scrape:
-    runs-on: ubuntu-latest
+    # Set repo variable RUNNER_LABEL to 'self-hosted' to run from your own
+    # UAE machine instead of GitHub's datacenter IPs (see SETUP.md).
+    runs-on: ${{ vars.RUNNER_LABEL || 'ubuntu-latest' }}
     steps:
       - uses: actions/checkout@v4
 
