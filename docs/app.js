@@ -191,7 +191,12 @@ function exportCSV() {
 
 async function init() {
   renderHeader();
-  await loadData();
+  if (window.DEMO_DATA) {
+    trackedData = window.DEMO_DATA.tracked;
+    latestData = window.DEMO_DATA.latest;
+  } else {
+    await loadData();
+  }
   renderTable();
   document.getElementById("export-btn").addEventListener("click", exportCSV);
 }
